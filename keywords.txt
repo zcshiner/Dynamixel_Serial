@@ -1,0 +1,49 @@
+# Class
+#######################################
+Dynamixel	KEYWORD1
+
+
+# Methods and Functions 
+#######################################	
+reset	KEYWORD2
+ping	KEYWORD2
+setStatusPaketReturnDelay	KEYWORD2
+setID	KEYWORD2
+setBaudRate	KEYWORD2
+setMaxTorque	KEYWORD2
+setHoldingTorque	KEYWORD2
+setAlarmShutdown	KEYWORD2
+setStatusPaket	KEYWORD2
+setMode	KEYWORD2
+setPunch	KEYWORD2
+setPID	KEYWORD2
+setTemp	KEYWORD2
+setVoltage	KEYWORD2
+
+servo	KEYWORD2
+servoPreload	KEYWORD2
+wheel	KEYWORD2
+wheelSync	KEYWORD2
+wheelPreload	KEYWORD2
+
+action	KEYWORD2
+
+readTemperature	KEYWORD2
+readVoltage	KEYWORD2
+readPosition	KEYWORD2
+readLoad	KEYWORD2
+readSpeed	KEYWORD2
+
+checkRegister	KEYWORD2
+checkMovement	KEYWORD2
+checkLock	KEYWORD2
+
+ledState	KEYWORD2
+
+
+# Constants
+#######################################
+SERVO	LITERAL1
+WHEEL	LITERAL1
+LEFT	LITERAL1
+RIGHT	LITERAL1
