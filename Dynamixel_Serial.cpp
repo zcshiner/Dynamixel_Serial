@@ -91,7 +91,7 @@ void DynamixelClass::transmitInstructionPacket(void){									// Transmit instru
 	
 	Serial1.write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
 	
-	if ((UCSR0A & B01100000) != B01100000){												// Wait for TX data to be sent
+	if ((UCSR1A & B01100000) != B01100000){												// Wait for TX data to be sent
 		Serial1.flush();
 	}	
 #else
