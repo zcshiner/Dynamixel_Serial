@@ -21,34 +21,34 @@ J.Teda New code writen using arrays, smaller and faster
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,  
+
+ This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- 
+
 
 How Dynamixel work can be found
 --------------------------------
-Robotis e-Manual  
+Robotis e-Manual
 http://support.robotis.com
 
-Overview of Communication 
+Overview of Communication
 http://support.robotis.com/en/product/dynamixel/dxl_communication.htm
 
-Kind of Instruction 
-http://support.robotis.com/en/product/dynamixel/communication/dxl_instruction.htm 
+Kind of Instruction
+http://support.robotis.com/en/product/dynamixel/communication/dxl_instruction.htm
 
 Instruction Packet & Status Packet (Return Packet)
 http://support.robotis.com/en/product/dynamixel/communication/dxl_packet.htm
- 
+
 Control Table
 http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
- 
+
  */
 
 #ifndef Dynamixel_Serial_h
@@ -63,7 +63,7 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 
 //#########################################################################
 //################ define - Dynamixel Hex code table ######################
-// EEPROM AREA  
+// EEPROM AREA
 #define EEPROM_MODEL_NUMBER_L           0x00
 #define EEPROM_MODEL_NUMBER_H           0x01
 #define EEPROM_VERSION                  0x02
@@ -82,7 +82,7 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 #define EEPROM_RETURN_LEVEL             0x10
 #define EEPROM_ALARM_LED                0x11
 #define EEPROM_ALARM_SHUTDOWN           0x12
-// RAM AREA  
+// RAM AREA
 #define RAM_TORQUE_ENABLE            	0x18
 #define RAM_LED                      	0x19
 #define RAM_PROPORTIONAL_GAIN     		0x1A
@@ -152,7 +152,7 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 #define SET_TEMP_LENGTH					0x04
 #define SET_VOLT_LENGTH					0x05
 #define SYNC_LOAD_LENGTH				0x0D
-#define SYNC_DATA_LENGTH				0x02		
+#define SYNC_DATA_LENGTH				0x02
 
 
 //#########################################################################
@@ -184,59 +184,57 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 
 
 
-
-
-class DynamixelClass {	
+class DynamixelClass {
 public:
-	
+
 	void begin(long);
 	void begin(HardwareSerial&, long);
 	void begin(Stream&);
 	void end(void);
-	
+
 	void setDirectionPin(unsigned char);
 	unsigned int reset(unsigned char);
-	unsigned int ping(unsigned char); 
-	
-	unsigned int setStatusPaketReturnDelay(unsigned char,unsigned char);	
+	unsigned int ping(unsigned char);
+
+	unsigned int setStatusPaketReturnDelay(unsigned char,unsigned char);
 	unsigned int setID(unsigned char, unsigned char);
 	unsigned int setBaudRate(unsigned char, long);
 	unsigned int setMaxTorque(unsigned char, int);
 	unsigned int setHoldingTorque(unsigned char, bool);
 	unsigned int setAlarmShutdown(unsigned char,unsigned char);
-	unsigned int setStatusPaket(unsigned char,unsigned char);	
+	unsigned int setStatusPaket(unsigned char,unsigned char);
 	unsigned int setMode(unsigned char, bool, unsigned int, unsigned int);
 	unsigned int setPunch(unsigned char, unsigned int);
 	unsigned int setPID(unsigned char, unsigned char, unsigned char, unsigned char);
 	unsigned int setTemp(unsigned char, unsigned char);
 	unsigned int setVoltage(unsigned char, unsigned char, unsigned char);
-	
+
 	unsigned int servo(unsigned char, unsigned int, unsigned int);
 	unsigned int servoPreload(unsigned char, unsigned int, unsigned int);
 	unsigned int wheel(unsigned char, bool, unsigned int);
 	void wheelSync(unsigned char, bool, unsigned int, unsigned char, bool, unsigned int, unsigned char, bool, unsigned int);
-	unsigned int wheelPreload(unsigned char, bool, unsigned int);		
-	
+	unsigned int wheelPreload(unsigned char, bool, unsigned int);
+
 	unsigned int action(unsigned char);
-	
+
 	unsigned int readTemperature(unsigned char);
 	unsigned int readVoltage(unsigned char);
 	unsigned int readPosition(unsigned char);
 	unsigned int readLoad(unsigned char);
 	unsigned int readSpeed(unsigned char);
-	
+
 	unsigned int checkRegister(unsigned char);
 	unsigned int checkMovement(unsigned char);
 	unsigned int checkLock(unsigned char);
-	
+
 	unsigned int ledState(unsigned char, bool);
-	
+
 private:
-	             
+
 	void transmitInstructionPacket(void);
 	unsigned int readStatusPacket(void);
 	void clearRXbuffer(void);
-	
+
 	Stream* _serial;
 	//Stream *_serial;
 };
