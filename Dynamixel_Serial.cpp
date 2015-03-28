@@ -2,21 +2,6 @@
 
 Version 2.2
 
-25/04/2013
-J.Teda "setMode" re-writen due to bug
-
-21/04/2013
-J.Teda "readStatusPacket" re-writen
-
-20/04/2013
-J.Teda TX pin High now controlled by UCSR0A ( Bit 6 ñ TXCn: USART Transmit Complete, Bit 5 ñ UDREn: USART Data Register Empty )
-
-14/04/2013
-J.Teda Error fixed in Angle limit settings (thanks = Chlen.Nigera )
-
-02/06/2012
-J.Teda New code writen using arrays, smaller and faster
-
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -30,24 +15,6 @@ J.Teda New code writen using arrays, smaller and faster
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-
-How Dynamixel work can be found
---------------------------------
-Robotis e-Manual
-http://support.robotis.com
-
-Overview of Communication
-http://support.robotis.com/en/product/dynamixel/dxl_communication.htm
-
-Kind of Instruction
-http://support.robotis.com/en/product/dynamixel/communication/dxl_instruction.htm
-
-Instruction Packet & Status Packet (Return Packet)
-http://support.robotis.com/en/product/dynamixel/communication/dxl_packet.htm
-
-Control Table
-http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 
  */
 
