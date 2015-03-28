@@ -13,6 +13,18 @@ See the examples folder for sample code.
 * 10 April 2012 - Dynamixel Library now has example of how to set-up and program a Dynamixel Servo via a Arduino
 * 17 January 2012 - Library and Arduino sketch in download section updated to work with Ardunio 1.0
 
+## More Information
+* Robotis e-Manual<br/>
+  [http://support.robotis.com](http://support.robotis.com)
+* Communication Overview<br/>
+  [http://support.robotis.com/en/product/dynamixel/dxl_communication.htm](http://support.robotis.com/en/product/dynamixel/dxl_communication.htm)
+* MX Series Control Table<br/>
+  [http://support.robotis.com/en/product/dynamixel/mx_series/mx-64.htm](http://support.robotis.com/en/product/dynamixel/mx_series/mx-64.htm)
+* Instruction Packet & Status Packet<br/>
+  [http://support.robotis.com/en/product/dynamixel/communication/dxl_packet.htm](http://support.robotis.com/en/product/dynamixel/communication/dxl_packet.htm)
+* Instruction Packet Examples<br/>
+  [http://support.robotis.com/en/product/dynamixel/communication/dxl_instruction.htm](http://support.robotis.com/en/product/dynamixel/communication/dxl_instruction.htm)
+
 ## Attribution
 Original code by J.Teda [https://code.google.com/p/slide-33/](https://code.google.com/p/slide-33/)
 
