@@ -5,6 +5,7 @@ Dynamixel	KEYWORD1
 
 # Methods and Functions 
 #######################################	
+setDirectionPin	KEYWORD2
 reset	KEYWORD2
 ping	KEYWORD2
 setStatusPaketReturnDelay	KEYWORD2

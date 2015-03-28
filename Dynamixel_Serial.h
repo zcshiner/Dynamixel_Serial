@@ -54,6 +54,13 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 #ifndef Dynamixel_Serial_h
 #define Dynamixel_Serial_h
 
+#if (ARDUINO >= 100)
+ #include <Arduino.h>
+#else
+ #include <WProgram.h>
+ #include <pins_arduino.h>
+#endif
+
 //#########################################################################
 //################ define - Dynamixel Hex code table ######################
 // EEPROM AREA  
@@ -176,7 +183,6 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 #define STATUS_FRAME_BUFFER				5
 
 
-#include <inttypes.h>
 
 
 
@@ -185,12 +191,19 @@ private:
 	             
 	void transmitInstructionPacket(void);
 	unsigned int readStatusPacket(void);
+	void clearRXbuffer(void);
+	
+	Stream* _serial;
+	//Stream *_serial;
 	
 public:
 	
-	void begin(long,unsigned char);
+	void begin(long);
+	void begin(HardwareSerial&, long);
+	void begin(Stream&);
 	void end(void);
 	
+	void setDirectionPin(unsigned char);
 	unsigned int reset(unsigned char);
 	unsigned int ping(unsigned char); 
 	
@@ -202,15 +215,15 @@ public:
 	unsigned int setAlarmShutdown(unsigned char,unsigned char);
 	unsigned int setStatusPaket(unsigned char,unsigned char);	
 	unsigned int setMode(unsigned char, bool, unsigned int, unsigned int);
-	unsigned int setPunch(unsigned char,unsigned int);
-	unsigned int setPID(unsigned char,unsigned char,unsigned char,unsigned char);
-	unsigned int setTemp(unsigned char,unsigned char);
-	unsigned int setVoltage(unsigned char,unsigned char,unsigned char);
+	unsigned int setPunch(unsigned char, unsigned int);
+	unsigned int setPID(unsigned char, unsigned char, unsigned char, unsigned char);
+	unsigned int setTemp(unsigned char, unsigned char);
+	unsigned int setVoltage(unsigned char, unsigned char, unsigned char);
 	
 	unsigned int servo(unsigned char, unsigned int, unsigned int);
 	unsigned int servoPreload(unsigned char, unsigned int, unsigned int);
 	unsigned int wheel(unsigned char, bool, unsigned int);
-	void wheelSync(unsigned char,bool,unsigned int,unsigned char, bool,unsigned int,unsigned char, bool,unsigned int);
+	void wheelSync(unsigned char, bool, unsigned int, unsigned char, bool, unsigned int, unsigned char, bool, unsigned int);
 	unsigned int wheelPreload(unsigned char, bool, unsigned int);		
 	
 	unsigned int action(unsigned char);

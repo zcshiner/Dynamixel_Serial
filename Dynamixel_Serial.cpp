@@ -50,20 +50,13 @@ Control Table
 http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
  
  */
- 
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include "Arduino.h"
-#include "wiring_private.h"
-#include "HardwareSerial.h"
+
 #include "Dynamixel_Serial.h"
-#include "Arduino.h"	//used for newer versions of Ardiuno ( 1.0 or greater )
 
 	unsigned char	Instruction_Packet_Array[15];	// Array to hold instruction packet data 
 	unsigned char	Status_Packet_Array[8];			// Array to hold returned status packet data
 	unsigned long 	Time_Counter;					// Timer for time out watchers
-	unsigned char 	Direction_Pin;					// Pin to control TX/RX buffer chip
+	char 	Direction_Pin = -1;		    	// Pin to control TX/RX buffer chip
 	unsigned char 	Status_Return_Value = READ;		// Status packet return states ( NON , READ , ALL )
 
 //##############################################################################
@@ -73,59 +66,39 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 void DynamixelClass::transmitInstructionPacket(void){									// Transmit instruction packet to Dynamixel
 
 	unsigned char Counter;
-	Counter = 0;	
+	Counter = 0;
 	
-	digitalWrite(Direction_Pin,HIGH);													// Set TX Buffer pin to HIGH	
+	if (Direction_Pin > -1){
+	    digitalWrite(Direction_Pin,HIGH);												// Set TX Buffer pin to HIGH	
+    }
 
-#if defined(__AVR_ATmega32U4__)
-	
-	Serial1.write(HEADER);																// Write Header (0xFF) data 1 to serial                     
-	Serial1.write(HEADER);																// Write Header (0xFF) data 2 to serial
-	Serial1.write(Instruction_Packet_Array[0]);											// Write Dynamixal ID to serial	
-	Serial1.write(Instruction_Packet_Array[1]);											// Write packet length to serial	
+	_serial->write(HEADER);																// Write Header (0xFF) data 1 to serial                     
+	_serial->write(HEADER);																// Write Header (0xFF) data 2 to serial
+	_serial->write(Instruction_Packet_Array[0]);		    							// Write Dynamixal ID to serial	
+	_serial->write(Instruction_Packet_Array[1]);										// Write packet length to serial	
 	
 	do{																					
-		Serial1.write(Instruction_Packet_Array[Counter + 2]);							// Write Instuction & Parameters (if there is any) to serial
+		_serial->write(Instruction_Packet_Array[Counter + 2]);							// Write Instuction & Parameters (if there is any) to serial
 		Counter++;
 	}while((Instruction_Packet_Array[1] - 2) >= Counter);
 	
-	Serial1.write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
-	
+	_serial->write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
+
+#if defined(__AVR_ATmega32U4__)	 // Arduino Leonardo uses a different hardware address
 	if ((UCSR1A & B01100000) != B01100000){												// Wait for TX data to be sent
-		Serial1.flush();
-	}	
-#else
-
-	Serial.write(HEADER);																// Write Header (0xFF) data 1 to serial                     
-	Serial.write(HEADER);																// Write Header (0xFF) data 2 to serial
-	Serial.write(Instruction_Packet_Array[0]);											// Write Dynamixal ID to serial	
-	Serial.write(Instruction_Packet_Array[1]);											// Write packet length to serial	
+		_serial->flush();
+	}
 	
-	do{																					
-		Serial.write(Instruction_Packet_Array[Counter + 2]);							// Write Instuction & Parameters (if there is any) to serial
-		Counter++;
-	}while((Instruction_Packet_Array[1] - 2) >= Counter);
-	
-	Serial.write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
-	
+#else	
 	if ((UCSR0A & B01100000) != B01100000){												// Wait for TX data to be sent
-		Serial.flush();
+		_serial->flush();
 	}	
 
 #endif	
-	
 
-//	Time_Counter = TX_PIN_HIGH_TIME_OUT + millis();
-//	while((UCSR0A & B01100000) == B01100000){											// Wait for data to be transmitted with timeout counter ( Bit 6 ñ TXCn: USART Transmit Complete, Bit 5 ñ UDREn: USART Data Register Empty )
-//	    if (millis() >= Time_Counter){
-//			break;
-//			}
-//	}
-
-
-	digitalWrite(Direction_Pin,LOW);													//Set TX Buffer pin to LOW after data has been sent
-	
-
+    if (Direction_Pin > -1){
+        digitalWrite(Direction_Pin,LOW);													//Set TX Buffer pin to LOW after data has been sent
+    }    
 }
 
 
@@ -142,27 +115,26 @@ unsigned int DynamixelClass::readStatusPacket(void){
 
 	Time_Counter = STATUS_PACKET_TIMEOUT + millis(); 									// Setup time out error
 	
-#if defined(__AVR_ATmega32U4__)															// Serail 0 on leonardo is used for USB, thus we need to use Serail1
-while(STATUS_FRAME_BUFFER >= Serial1.available()){										// Wait for " header + header + frame length + error " RX data
+while(STATUS_FRAME_BUFFER >= _serial->available()){										// Wait for " header + header + frame length + error " RX data
 
 	    if (millis() >= Time_Counter){
 		return Status_Packet_Array[2] = B10000000;										// Return with Error if Serial data not received with in time limit
 		}
 } 
 	
-	if (Serial1.peek() == 0xFF && First_Header != 0xFF){
-		First_Header = Serial1.read();													// Clear 1st header from RX buffer
-		}else if (Serial1.peek() == -1){
+	if (_serial->peek() == 0xFF && First_Header != 0xFF){
+		First_Header = _serial->read();													// Clear 1st header from RX buffer
+		}else if (_serial->peek() == -1){
 		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
 		}
-		if(Serial1.peek() == 0xFF && First_Header == 0xFF){
-			Serial1.read();																// Clear 2nd header from RX buffer
-			Status_Packet_Array[0] = Serial1.read();                 					// ID sent from Dynamixel
-			Status_Packet_Array[1] = Serial1.read();									// Frame Length of status packet
-			Status_Packet_Array[2] = Serial1.read();									// Error byte 
+		if(_serial->peek() == 0xFF && First_Header == 0xFF){
+			_serial->read();																// Clear 2nd header from RX buffer
+			Status_Packet_Array[0] = _serial->read();                 					// ID sent from Dynamixel
+			Status_Packet_Array[1] = _serial->read();										// Frame Length of status packet
+			Status_Packet_Array[2] = _serial->read();										// Error byte 
 			
 			Time_Counter = STATUS_PACKET_TIMEOUT + millis();
-				while(Status_Packet_Array[1] - 2 >= Serial1.available()){				// Wait for wait for "Para1 + ... Para X" received data
+				while(Status_Packet_Array[1] - 2 >= _serial->available()){				// Wait for wait for "Para1 + ... Para X" received data
 
 					if (millis() >= Time_Counter){
 					return Status_Packet_Array[2] = B10000000;							// Return with Error if Serial data not received with in time limit
@@ -170,54 +142,19 @@ while(STATUS_FRAME_BUFFER >= Serial1.available()){										// Wait for " header
 				} 
 		
 					do{
-						Status_Packet_Array[3 + Counter] = Serial1.read();
+						Status_Packet_Array[3 + Counter] = _serial->read();
 						Counter++;				
 					}while(Status_Packet_Array[1] > Counter);							// Read Parameter(s) into array
 			
-			Status_Packet_Array[Counter + 4] = Serial1.read();							// Read Check sum	
+			Status_Packet_Array[Counter + 4] = _serial->read();							// Read Check sum	
 				
 		}else{
 		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
 		}
-		
-#else
-while(STATUS_FRAME_BUFFER >= Serial.available()){										// Wait for " header + header + frame length + error " RX data
+}
 
-	    if (millis() >= Time_Counter){
-		return Status_Packet_Array[2] = B10000000;										// Return with Error if Serial data not received with in time limit
-		}
-} 
-	
-	if (Serial.peek() == 0xFF && First_Header != 0xFF){
-		First_Header = Serial.read();													// Clear 1st header from RX buffer
-		}else if (Serial.peek() == -1){
-		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
-		}
-		if(Serial.peek() == 0xFF && First_Header == 0xFF){
-			Serial.read();																// Clear 2nd header from RX buffer
-			Status_Packet_Array[0] = Serial.read();                 					// ID sent from Dynamixel
-			Status_Packet_Array[1] = Serial.read();										// Frame Length of status packet
-			Status_Packet_Array[2] = Serial.read();										// Error byte 
-			
-			Time_Counter = STATUS_PACKET_TIMEOUT + millis();
-				while(Status_Packet_Array[1] - 2 >= Serial.available()){				// Wait for wait for "Para1 + ... Para X" received data
-
-					if (millis() >= Time_Counter){
-					return Status_Packet_Array[2] = B10000000;							// Return with Error if Serial data not received with in time limit
-					}
-				} 
-		
-					do{
-						Status_Packet_Array[3 + Counter] = Serial.read();
-						Counter++;				
-					}while(Status_Packet_Array[1] > Counter);							// Read Parameter(s) into array
-			
-			Status_Packet_Array[Counter + 4] = Serial.read();							// Read Check sum	
-				
-		}else{
-		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
-		}
-#endif
+void DynamixelClass::clearRXbuffer(void){
+	while (_serial->read() != -1);  // Clear RX buffer;
 }
 
 
@@ -225,21 +162,39 @@ while(STATUS_FRAME_BUFFER >= Serial.available()){										// Wait for " header 
 //############################ Public Methods ##################################
 //##############################################################################
 
-void DynamixelClass::begin(long baud, unsigned char D_Pin){	
+void DynamixelClass::begin(long baud){
 
-#if defined(__AVR_ATmega32U4__)
-	Serial1.begin(baud);					//Setup Serail
-#else 
-	Serial.begin(baud);					//Setup Serail
+#if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__) || defined(__AVR_ATmega2560__)
+	Serial1.begin(baud);  // Set up Serial for Leonardo and Mega
+	_serial = &Serial1;
+#else
+	Serial.begin(baud);   // Set up Serial for all others (Uno, etc)
+    _serial = &Serial;
 #endif
-	Direction_Pin = D_Pin;
-	pinMode(Direction_Pin,OUTPUT);	
-	
-}	
 
+}
+
+void DynamixelClass::begin(HardwareSerial &HWserial, long baud){
+    HWserial.begin(baud); // Set up Serial for a specified Serial object
+    _serial = &HWserial;
+}
+
+void DynamixelClass::begin(Stream &serial){
+	_serial = &serial;  // Set a reference to a specified Stream object (Hard or Soft Serial)
+}
+ 
 void DynamixelClass::end(){
-
-	Serial.end();	
+#if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__) || defined(__AVR_ATmega2560__)
+	Serial1.end();
+#else
+	Serial.end();
+#endif
+}
+ 
+ 
+void DynamixelClass::setDirectionPin(unsigned char D_Pin){
+    Direction_Pin = D_Pin;
+	pinMode(Direction_Pin,OUTPUT);
 }
 
 unsigned int DynamixelClass::reset(unsigned char ID){
@@ -249,11 +204,7 @@ unsigned int DynamixelClass::reset(unsigned char ID){
 	Instruction_Packet_Array[2] = COMMAND_RESET;
 	Instruction_Packet_Array[3] = ~(ID + RESET_LENGTH + COMMAND_RESET);	//Checksum;
 
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
 
 	transmitInstructionPacket();	
 	
@@ -276,11 +227,8 @@ unsigned int DynamixelClass::ping(unsigned char ID){
 	Instruction_Packet_Array[2] = COMMAND_PING;
 	Instruction_Packet_Array[3] = ~(ID + PING_LENGTH + COMMAND_PING);
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+	
 	transmitInstructionPacket();    
 	readStatusPacket();
 	
@@ -300,11 +248,8 @@ unsigned int DynamixelClass::setStatusPaketReturnDelay(unsigned char ID,unsigned
 	Instruction_Packet_Array[4] = byte(ReturnDelay/2);
 	Instruction_Packet_Array[5] = ~(ID + SET_RETURN_LENGTH + COMMAND_WRITE_DATA + EEPROM_RETURN_DELAY_TIME + byte(ReturnDelay/2)); 	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+	
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -329,11 +274,8 @@ unsigned int DynamixelClass::setID(unsigned char ID, unsigned char New_ID){
 	Instruction_Packet_Array[4] = New_ID;
 	Instruction_Packet_Array[5] = ~(ID + SET_ID_LENGTH + COMMAND_WRITE_DATA+ EEPROM_ID + New_ID);  
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+	
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -374,11 +316,8 @@ if (Baud >= 1000000){
 	}
 	Instruction_Packet_Array[5] = ~(ID + SET_BD_LENGTH + COMMAND_WRITE_DATA + EEPROM_BAUD_RATE + byte((2000000/Baud) - 1) ); 
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -403,11 +342,8 @@ unsigned int DynamixelClass::setMaxTorque( unsigned char ID, int Torque){
 	Instruction_Packet_Array[5] = byte(Torque >> 8);
 	Instruction_Packet_Array[6] = ~(ID + SET_MAX_TORQUE_LENGTH + COMMAND_WRITE_DATA + EEPROM_MAX_TORQUE_L + byte(Torque) + byte(Torque >> 8));
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+	
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -431,11 +367,8 @@ unsigned int DynamixelClass::setHoldingTorque(unsigned char ID, bool Set){
 	Instruction_Packet_Array[4] = Set;
 	Instruction_Packet_Array[5] = ~(ID + SET_HOLDING_TORQUE_LENGTH + COMMAND_WRITE_DATA + RAM_TORQUE_ENABLE + Set);	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+	
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -459,11 +392,8 @@ unsigned int DynamixelClass::setAlarmShutdown(unsigned char  ID,unsigned char Se
 	Instruction_Packet_Array[4] = Set;
 	Instruction_Packet_Array[5] = ~(ID + SET_ALARM_LENGTH + COMMAND_WRITE_DATA + EEPROM_ALARM_SHUTDOWN + Set);	
     
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -490,11 +420,8 @@ unsigned int DynamixelClass::setStatusPaket(unsigned char  ID,unsigned char Set)
     
 	Status_Return_Value = Set;
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -532,11 +459,8 @@ unsigned int DynamixelClass::setMode(unsigned char ID, bool Dynamixel_Mode, unsi
 	}	
 		
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+	
 	transmitInstructionPacket();
 	
 		if (Status_Return_Value == ALL){
@@ -559,11 +483,8 @@ unsigned int DynamixelClass::setMode(unsigned char ID, bool Dynamixel_Mode, unsi
 	Instruction_Packet_Array[5] = byte(Punch >> 8);
 	Instruction_Packet_Array[6] = ~(ID + SET_PUNCH_LENGTH + COMMAND_WRITE_DATA + RAM_PUNCH_L + byte(Punch) + byte(Punch >> 8) );
     
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -590,11 +511,8 @@ unsigned int DynamixelClass::setMode(unsigned char ID, bool Dynamixel_Mode, unsi
 	Instruction_Packet_Array[6] = D;
 	Instruction_Packet_Array[7] = ~(ID + SET_PID_LENGTH + COMMAND_WRITE_DATA + RAM_PROPORTIONAL_GAIN + P + I + D );
     
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -618,11 +536,8 @@ unsigned int DynamixelClass::setTemp(unsigned char ID,unsigned char temp){
 	Instruction_Packet_Array[4] = temp;
 	Instruction_Packet_Array[5] = ~(ID + SET_TEMP_LENGTH + COMMAND_WRITE_DATA + EEPROM_LIMIT_TEMPERATURE + temp); 	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -647,11 +562,8 @@ unsigned int DynamixelClass::setVoltage(unsigned char ID,unsigned char Volt_L, u
 	Instruction_Packet_Array[5] = Volt_H;
 	Instruction_Packet_Array[6] = ~(ID + SET_VOLT_LENGTH + COMMAND_WRITE_DATA + EEPROM_LOW_LIMIT_VOLTAGE + Volt_L + Volt_H); 	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -678,11 +590,8 @@ unsigned int DynamixelClass::servo(unsigned char ID,unsigned int Position,unsign
 	Instruction_Packet_Array[7] = byte((Speed & 0x0F00) >> 8);
 	Instruction_Packet_Array[8] = ~(ID + SERVO_GOAL_LENGTH + COMMAND_WRITE_DATA + RAM_GOAL_POSITION_L + Position + byte((Position & 0x0F00) >> 8) + Speed + byte((Speed & 0x0F00) >> 8));	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	
@@ -710,11 +619,8 @@ unsigned int DynamixelClass::servoPreload(unsigned char ID,unsigned int Position
 	Instruction_Packet_Array[7] = byte(Speed >> 8);
 	Instruction_Packet_Array[8] = ~(ID + SERVO_GOAL_LENGTH + COMMAND_REG_WRITE_DATA + RAM_GOAL_POSITION_L + byte(Position) + byte(Position >> 8) + byte(Speed) + byte(Speed >> 8));	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -748,11 +654,9 @@ unsigned int DynamixelClass::wheel(unsigned char ID, bool Rotation,unsigned int 
 	Instruction_Packet_Array[5] = Speed_H;
 	Instruction_Packet_Array[6] = ~(ID + WHEEL_LENGTH + COMMAND_WRITE_DATA + RAM_GOAL_SPEED_L  + Speed_L + Speed_H);			
 			
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -840,11 +744,8 @@ unsigned int DynamixelClass::wheelPreload(unsigned char ID, bool Dir,unsigned in
 	Instruction_Packet_Array[5] = Speed_H;
 	Instruction_Packet_Array[6] = ~(ID + WHEEL_LENGTH + COMMAND_REG_WRITE_DATA + RAM_GOAL_SPEED_L + Speed_L + Speed_H);				
 			
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -867,11 +768,8 @@ unsigned int DynamixelClass::action(unsigned char ID){
 	Instruction_Packet_Array[2] = COMMAND_ACTION;
 	Instruction_Packet_Array[3] = ~(ID + ACTION_LENGTH + COMMAND_ACTION);
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -895,11 +793,8 @@ unsigned int DynamixelClass::ledState(unsigned char ID, bool Status){
 	Instruction_Packet_Array[4] = Status;
 	Instruction_Packet_Array[5] = ~(ID + LED_LENGTH + COMMAND_WRITE_DATA + RAM_LED + Status);	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	
 	if (ID == 0XFE || Status_Return_Value != ALL ){		// If ID of FE is used no status packets are returned so we do not need to check it
@@ -923,11 +818,8 @@ unsigned int DynamixelClass::readTemperature(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_ONE_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_TEMP_LENGTH  + COMMAND_READ_DATA + RAM_PRESENT_TEMPERATURE + READ_ONE_BYTE_LENGTH);
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();	
 
@@ -947,11 +839,8 @@ unsigned int DynamixelClass::readPosition(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_TWO_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_POS_LENGTH + COMMAND_READ_DATA + RAM_PRESENT_POSITION_L + READ_TWO_BYTE_LENGTH);	
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();	
 	readStatusPacket();
 	
@@ -971,11 +860,8 @@ unsigned int DynamixelClass::readLoad(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_TWO_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_LOAD_LENGTH + COMMAND_READ_DATA + RAM_PRESENT_LOAD_L  + READ_TWO_BYTE_LENGTH);
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();
 	
@@ -995,11 +881,8 @@ unsigned int DynamixelClass::readSpeed(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_TWO_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_SPEED_LENGTH + COMMAND_READ_DATA + RAM_PRESENT_SPEED_L + READ_TWO_BYTE_LENGTH);
 	
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();
 	
@@ -1020,11 +903,8 @@ unsigned int DynamixelClass::readVoltage(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_ONE_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_VOLT_LENGTH + COMMAND_READ_DATA + RAM_PRESENT_VOLTAGE + READ_ONE_BYTE_LENGTH);	
 
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();
 	
@@ -1044,11 +924,8 @@ unsigned int DynamixelClass::checkRegister(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_ONE_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_REGISTER_LENGTH + COMMAND_READ_DATA + RAM_REGISTER + READ_ONE_BYTE_LENGTH);
 
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();
 	
@@ -1068,11 +945,8 @@ unsigned int DynamixelClass::checkMovement(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_ONE_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_MOVING_LENGTH + COMMAND_READ_DATA + RAM_MOVING + READ_ONE_BYTE_LENGTH);
 
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();
 	
@@ -1092,11 +966,8 @@ unsigned int DynamixelClass::checkLock(unsigned char ID){
 	Instruction_Packet_Array[4] = READ_ONE_BYTE_LENGTH;
 	Instruction_Packet_Array[5] = ~(ID + READ_LOCK_LENGTH + COMMAND_READ_DATA + RAM_LOCK + READ_ONE_BYTE_LENGTH);	
 
-#if defined(__AVR_ATmega32U4__)
-	while (Serial1.read() != -1);						// Clear RX buffer;
-#else 
-	while (Serial.read() != -1);						// Clear RX buffer;
-#endif	
+    clearRXbuffer();
+
 	transmitInstructionPacket();
 	readStatusPacket();
 	
