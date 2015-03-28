@@ -899,28 +899,29 @@ void DynamixelClass::transmitInstructionPacket(void){									// Transmit instru
 	_serial->write(Instruction_Packet_Array[0]);		    							// Write Dynamixal ID to serial	
 	_serial->write(Instruction_Packet_Array[1]);										// Write packet length to serial	
 	
-	do{																					
+	do{
 		_serial->write(Instruction_Packet_Array[Counter + 2]);							// Write Instuction & Parameters (if there is any) to serial
 		Counter++;
 	}while((Instruction_Packet_Array[1] - 2) >= Counter);
-	
-	_serial->write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
+	noInterrupts();
+	_serial->write(Instruction_Packet_Array[Counter + 2]);								// Write checksum to serial
 
 #if defined(__AVR_ATmega32U4__)	 // Arduino Leonardo uses a different hardware address
 	if ((UCSR1A & B01100000) != B01100000){												// Wait for TX data to be sent
 		_serial->flush();
 	}
 	
-#else	
+#else
 	if ((UCSR0A & B01100000) != B01100000){												// Wait for TX data to be sent
 		_serial->flush();
-	}	
+	}
 
 #endif	
 
     if (Direction_Pin > -1){
-        digitalWrite(Direction_Pin,LOW);													//Set TX Buffer pin to LOW after data has been sent
-    }    
+        digitalWrite(Direction_Pin,LOW);												//Set TX Buffer pin to LOW after data has been sent
+    }
+    interrupts(); 
 }
 
 
