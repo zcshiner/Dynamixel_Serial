@@ -186,16 +186,7 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 
 
 
-class DynamixelClass {
-private:
-	             
-	void transmitInstructionPacket(void);
-	unsigned int readStatusPacket(void);
-	void clearRXbuffer(void);
-	
-	Stream* _serial;
-	//Stream *_serial;
-	
+class DynamixelClass {	
 public:
 	
 	void begin(long);
@@ -239,7 +230,18 @@ public:
 	unsigned int checkLock(unsigned char);
 	
 	unsigned int ledState(unsigned char, bool);
+	
+private:
+	             
+	void transmitInstructionPacket(void);
+	unsigned int readStatusPacket(void);
+	void clearRXbuffer(void);
+	
+	Stream* _serial;
+	//Stream *_serial;
 };
+
+
 
 extern DynamixelClass Dynamixel;
 

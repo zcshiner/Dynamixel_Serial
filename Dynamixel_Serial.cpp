@@ -59,104 +59,6 @@ http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
 	char 	Direction_Pin = -1;		    	// Pin to control TX/RX buffer chip
 	unsigned char 	Status_Return_Value = READ;		// Status packet return states ( NON , READ , ALL )
 
-//##############################################################################
-//########################## Private Methods ###################################
-//##############################################################################
-
-void DynamixelClass::transmitInstructionPacket(void){									// Transmit instruction packet to Dynamixel
-
-	unsigned char Counter;
-	Counter = 0;
-	
-	if (Direction_Pin > -1){
-	    digitalWrite(Direction_Pin,HIGH);												// Set TX Buffer pin to HIGH	
-    }
-
-	_serial->write(HEADER);																// Write Header (0xFF) data 1 to serial                     
-	_serial->write(HEADER);																// Write Header (0xFF) data 2 to serial
-	_serial->write(Instruction_Packet_Array[0]);		    							// Write Dynamixal ID to serial	
-	_serial->write(Instruction_Packet_Array[1]);										// Write packet length to serial	
-	
-	do{																					
-		_serial->write(Instruction_Packet_Array[Counter + 2]);							// Write Instuction & Parameters (if there is any) to serial
-		Counter++;
-	}while((Instruction_Packet_Array[1] - 2) >= Counter);
-	
-	_serial->write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
-
-#if defined(__AVR_ATmega32U4__)	 // Arduino Leonardo uses a different hardware address
-	if ((UCSR1A & B01100000) != B01100000){												// Wait for TX data to be sent
-		_serial->flush();
-	}
-	
-#else	
-	if ((UCSR0A & B01100000) != B01100000){												// Wait for TX data to be sent
-		_serial->flush();
-	}	
-
-#endif	
-
-    if (Direction_Pin > -1){
-        digitalWrite(Direction_Pin,LOW);													//Set TX Buffer pin to LOW after data has been sent
-    }    
-}
-
-
-unsigned int DynamixelClass::readStatusPacket(void){
-
-	unsigned char Counter = 0x00;
-	unsigned char First_Header = 0x00;
-	
-	Status_Packet_Array[0] = 0x00;
-	Status_Packet_Array[1] = 0x00;
-	Status_Packet_Array[2] = 0x00;														
-	Status_Packet_Array[3] = 0x00;
-	
-
-	Time_Counter = STATUS_PACKET_TIMEOUT + millis(); 									// Setup time out error
-	
-while(STATUS_FRAME_BUFFER >= _serial->available()){										// Wait for " header + header + frame length + error " RX data
-
-	    if (millis() >= Time_Counter){
-		return Status_Packet_Array[2] = B10000000;										// Return with Error if Serial data not received with in time limit
-		}
-} 
-	
-	if (_serial->peek() == 0xFF && First_Header != 0xFF){
-		First_Header = _serial->read();													// Clear 1st header from RX buffer
-		}else if (_serial->peek() == -1){
-		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
-		}
-		if(_serial->peek() == 0xFF && First_Header == 0xFF){
-			_serial->read();																// Clear 2nd header from RX buffer
-			Status_Packet_Array[0] = _serial->read();                 					// ID sent from Dynamixel
-			Status_Packet_Array[1] = _serial->read();										// Frame Length of status packet
-			Status_Packet_Array[2] = _serial->read();										// Error byte 
-			
-			Time_Counter = STATUS_PACKET_TIMEOUT + millis();
-				while(Status_Packet_Array[1] - 2 >= _serial->available()){				// Wait for wait for "Para1 + ... Para X" received data
-
-					if (millis() >= Time_Counter){
-					return Status_Packet_Array[2] = B10000000;							// Return with Error if Serial data not received with in time limit
-					}
-				} 
-		
-					do{
-						Status_Packet_Array[3 + Counter] = _serial->read();
-						Counter++;				
-					}while(Status_Packet_Array[1] > Counter);							// Read Parameter(s) into array
-			
-			Status_Packet_Array[Counter + 4] = _serial->read();							// Read Check sum	
-				
-		}else{
-		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
-		}
-}
-
-void DynamixelClass::clearRXbuffer(void){
-	while (_serial->read() != -1);  // Clear RX buffer;
-}
-
 
 //##############################################################################
 //############################ Public Methods ##################################
@@ -976,6 +878,105 @@ unsigned int DynamixelClass::checkLock(unsigned char ID){
 	}else{
 		return (Status_Packet_Array[2] | 0xF000);   // If there is a error Returns error value
 	}
+}
+
+
+//##############################################################################
+//########################## Private Methods ###################################
+//##############################################################################
+
+void DynamixelClass::transmitInstructionPacket(void){									// Transmit instruction packet to Dynamixel
+
+	unsigned char Counter;
+	Counter = 0;
+	
+	if (Direction_Pin > -1){
+	    digitalWrite(Direction_Pin,HIGH);												// Set TX Buffer pin to HIGH	
+    }
+
+	_serial->write(HEADER);																// Write Header (0xFF) data 1 to serial                     
+	_serial->write(HEADER);																// Write Header (0xFF) data 2 to serial
+	_serial->write(Instruction_Packet_Array[0]);		    							// Write Dynamixal ID to serial	
+	_serial->write(Instruction_Packet_Array[1]);										// Write packet length to serial	
+	
+	do{																					
+		_serial->write(Instruction_Packet_Array[Counter + 2]);							// Write Instuction & Parameters (if there is any) to serial
+		Counter++;
+	}while((Instruction_Packet_Array[1] - 2) >= Counter);
+	
+	_serial->write(Instruction_Packet_Array[Counter + 2]);								// Write check sum to serial
+
+#if defined(__AVR_ATmega32U4__)	 // Arduino Leonardo uses a different hardware address
+	if ((UCSR1A & B01100000) != B01100000){												// Wait for TX data to be sent
+		_serial->flush();
+	}
+	
+#else	
+	if ((UCSR0A & B01100000) != B01100000){												// Wait for TX data to be sent
+		_serial->flush();
+	}	
+
+#endif	
+
+    if (Direction_Pin > -1){
+        digitalWrite(Direction_Pin,LOW);													//Set TX Buffer pin to LOW after data has been sent
+    }    
+}
+
+
+unsigned int DynamixelClass::readStatusPacket(void){
+
+	unsigned char Counter = 0x00;
+	unsigned char First_Header = 0x00;
+	
+	Status_Packet_Array[0] = 0x00;
+	Status_Packet_Array[1] = 0x00;
+	Status_Packet_Array[2] = 0x00;														
+	Status_Packet_Array[3] = 0x00;
+	
+
+	Time_Counter = STATUS_PACKET_TIMEOUT + millis(); 									// Setup time out error
+	
+while(STATUS_FRAME_BUFFER >= _serial->available()){										// Wait for " header + header + frame length + error " RX data
+
+	    if (millis() >= Time_Counter){
+		return Status_Packet_Array[2] = B10000000;										// Return with Error if Serial data not received with in time limit
+		}
+} 
+	
+	if (_serial->peek() == 0xFF && First_Header != 0xFF){
+		First_Header = _serial->read();													// Clear 1st header from RX buffer
+		}else if (_serial->peek() == -1){
+		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
+		}
+		if(_serial->peek() == 0xFF && First_Header == 0xFF){
+			_serial->read();																// Clear 2nd header from RX buffer
+			Status_Packet_Array[0] = _serial->read();                 					// ID sent from Dynamixel
+			Status_Packet_Array[1] = _serial->read();										// Frame Length of status packet
+			Status_Packet_Array[2] = _serial->read();										// Error byte 
+			
+			Time_Counter = STATUS_PACKET_TIMEOUT + millis();
+				while(Status_Packet_Array[1] - 2 >= _serial->available()){				// Wait for wait for "Para1 + ... Para X" received data
+
+					if (millis() >= Time_Counter){
+					return Status_Packet_Array[2] = B10000000;							// Return with Error if Serial data not received with in time limit
+					}
+				} 
+		
+					do{
+						Status_Packet_Array[3 + Counter] = _serial->read();
+						Counter++;				
+					}while(Status_Packet_Array[1] > Counter);							// Read Parameter(s) into array
+			
+			Status_Packet_Array[Counter + 4] = _serial->read();							// Read Check sum	
+				
+		}else{
+		return Status_Packet_Array[2] = B10000000;										// Return with Error if two headers are not found
+		}
+}
+
+void DynamixelClass::clearRXbuffer(void){
+	while (_serial->read() != -1);  // Clear RX buffer;
 }
 
 DynamixelClass Dynamixel;
