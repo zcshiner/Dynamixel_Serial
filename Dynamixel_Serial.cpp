@@ -107,7 +107,7 @@ unsigned int DynamixelClass::ping(unsigned char ID){
     }else{
         return (Status_Packet_Array[2] | 0xF000);   // If there is a error Returns error value
     }
-    
+
 }
 
 unsigned int DynamixelClass::setStatusPaketReturnDelay(unsigned char ID,unsigned char ReturnDelay){
@@ -408,7 +408,7 @@ unsigned int DynamixelClass::setTemp(unsigned char ID,unsigned char temp){
             return (Status_Packet_Array[2] | 0xF000);   // If there is a error Returns error value
         }
     }
-    
+
 }
 
 unsigned int DynamixelClass::setVoltage(unsigned char ID,unsigned char Volt_L, unsigned char Volt_H){
@@ -434,7 +434,7 @@ unsigned int DynamixelClass::setVoltage(unsigned char ID,unsigned char Volt_L, u
             return (Status_Packet_Array[2] | 0xF000);   // If there is a error Returns error value
         }
     }
-    
+
 }
 
 unsigned int DynamixelClass::servo(unsigned char ID,unsigned int Position,unsigned int Speed){
@@ -463,7 +463,7 @@ unsigned int DynamixelClass::servo(unsigned char ID,unsigned int Position,unsign
             return (Status_Packet_Array[2] | 0xF000);   // If there is a error Returns error value
         }
     }
-    
+
 }
 
 unsigned int DynamixelClass::servoPreload(unsigned char ID,unsigned int Position,unsigned int Speed){
@@ -491,7 +491,7 @@ unsigned int DynamixelClass::servoPreload(unsigned char ID,unsigned int Position
             return (Status_Packet_Array[2] | 0xF000);   // If there is a error Returns error value
         }
     }
-    
+
 }
 
 unsigned int DynamixelClass::wheel(unsigned char ID, bool Rotation,unsigned int Speed){
@@ -500,7 +500,7 @@ unsigned int DynamixelClass::wheel(unsigned char ID, bool Rotation,unsigned int 
     Speed_L = Speed;
     if (Rotation == 0){                         // Move Left
         Speed_H = Speed >> 8;
-        
+
     }else if (Rotation == 1){                    // Move Right
         Speed_H = (Speed >> 8)+4;
     }
@@ -639,6 +639,8 @@ unsigned int DynamixelClass::action(unsigned char ID){
 }
 
 unsigned int DynamixelClass::ledState(unsigned char ID, bool Status){
+
+    delay(1);                                           // Sending packets too fast has been problematic
 
     Instruction_Packet_Array[0] = ID;
     Instruction_Packet_Array[1] = LED_LENGTH;
@@ -839,22 +841,28 @@ void DynamixelClass::transmitInstructionPacket(void){                           
     _serial->write(Instruction_Packet_Array[0]);                                        // 3 Write Dynamixal ID to serial
     _serial->write(Instruction_Packet_Array[1]);                                        // 4 Write packet length to serial
     _serial->write(Instruction_Packet_Array[2]);                                        // 5 Write instruction type to serial
-    
-    unsigned int checksum_packet = Instruction_Packet_Array[0] + Instruction_Packet_Array[1] + Instruction_Packet_Array[2]; 
+
+    unsigned int checksum_packet = Instruction_Packet_Array[0] + Instruction_Packet_Array[1] + Instruction_Packet_Array[2];
 
     for (unsigned char i = 3; i <= Instruction_Packet_Array[1]; i++){
         _serial->write(Instruction_Packet_Array[i]);                                    // Write Instuction & Parameters (if there are any) to serial
         checksum_packet += Instruction_Packet_Array[i];
     }
-    
+
     noInterrupts();
-                   
+
     _serial->write(~checksum_packet & 0xFF);                                            // Write low bit of checksum to serial
 
 #if defined(__AVR_ATmega32U4__)  // Arduino Leonardo uses a different hardware address
     if ((UCSR1A & B01100000) != B01100000){                                             // Wait for TX data to be sent
         _serial->flush();
     }
+
+#elif defined(__SAM3X8E__)
+
+    //if(USART_GetFlagStatus(USART1, USART_FLAG_TC) != RESET)
+        _serial->flush();
+    //}
 
 #else
     if ((UCSR0A & B01100000) != B01100000){                                             // Wait for TX data to be sent
@@ -866,7 +874,7 @@ void DynamixelClass::transmitInstructionPacket(void){                           
     if (Direction_Pin > -1){
         digitalWrite(Direction_Pin,LOW);                                                //Set TX Buffer pin to LOW after data has been sent
     }
-    
+
     interrupts();
 
 }
