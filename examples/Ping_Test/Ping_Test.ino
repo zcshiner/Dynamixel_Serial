@@ -1,4 +1,4 @@
-/* 
+/*
 J.Teda 21/04/2013
 
 This is a smiple ping test to see if your Half to full duplex circuit is working using the LED on pin 13
@@ -18,27 +18,28 @@ Robotis e-Manual ( http://support.robotis.com )
 #define LED13 0x0D                  // Pin for Visual indication when ping test is successful - pin 13 normal has a built in LED on Arduino UNO
 
 
-void setup(){ 
-  
+void setup(){
+
   pinMode(LED13, OUTPUT);
   digitalWrite(LED13, LOW);
-  
+
   delay(1000);                                               // Give time for Dynamixel to start on power-up
 
-  Dynamixel.begin(SERVO_SET_Baudrate, SERVO_ControlPin);     // Set up Arduino to communicate to Dynamixel
-
+  Dynamixel.begin(SERVO_SET_Baudrate);                       // Set up Arduino to communicate to Dynamixel
+  Dynamixel.setDirectionPin(SERVO_ControlPin);               // Optional. Set direction control pin
 }
 
 
-void loop(){ 
+void loop(){
 
   if (Dynamixel.ping(SERVO_ID) == SERVO_ID){  // Ping SUCCESSFUL, Status packet has been recived with no error - the value returned from ping is the servo ID
     digitalWrite(LED13, HIGH);
       }else{                                  // Ping NOT successful
         digitalWrite(LED13, LOW);
       }
-    
+
 //  delay(500);  // Delay 0.5 Sec
 }
+
 
 
