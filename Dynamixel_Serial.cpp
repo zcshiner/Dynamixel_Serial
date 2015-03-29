@@ -166,22 +166,20 @@ unsigned int DynamixelClass::setBaudRate(unsigned char ID, long Baud){
     Instruction_Packet_Array[2] = COMMAND_WRITE_DATA;
     Instruction_Packet_Array[3] = EEPROM_BAUD_RATE;
 
-    if (Baud >= 1000000){
-        switch (Baud){
-            case 1000000:
-                Instruction_Packet_Array[4] = 0x01;
-                break;
-            case 2250000:
-                Instruction_Packet_Array[4] = 0xFA;
-                break;
-            case 2500000:
-                Instruction_Packet_Array[4] = 0xFB;
-                break;
-            case 3000000:
-                Instruction_Packet_Array[4] = 0xFC;
-                break;
-        }
-    }else{
+    switch (Baud){
+        case 1000000:
+            Instruction_Packet_Array[4] = 0x01;
+            break;
+        case 2250000:
+            Instruction_Packet_Array[4] = 0xFA;
+            break;
+        case 2500000:
+            Instruction_Packet_Array[4] = 0xFB;
+            break;
+        case 3000000:
+            Instruction_Packet_Array[4] = 0xFC;
+            break;
+        default:
         Instruction_Packet_Array[4] = byte((2000000/Baud) - 1);
     }
 
