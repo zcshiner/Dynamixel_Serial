@@ -89,6 +89,7 @@ Version 2.2
 
 //#########################################################################
 //################ Instruction packet lengths #############################
+// Packet length is number of parameters (N) + 2
 #define READ_ONE_BYTE_LENGTH            0x01
 #define READ_TWO_BYTE_LENGTH            0x02
 #define RESET_LENGTH                    0x02
@@ -153,6 +154,8 @@ Version 2.2
 
 class DynamixelClass {
 public:
+    // Constructor
+    DynamixelClass(): Direction_Pin(-1), Status_Return_Value(READ) { }
 
     void begin(long);
     void begin(HardwareSerial&, long);
@@ -202,10 +205,14 @@ private:
     unsigned int readStatusPacket(void);
     void clearRXbuffer(void);
 
-    Stream* _serial;
-    //Stream *_serial;
-};
+    Stream *_serial;
 
+    unsigned char   Instruction_Packet_Array[14];   // Array to hold instruction packet data
+    unsigned char   Status_Packet_Array[8];         // Array to hold returned status packet data
+    unsigned long   Time_Counter;                   // Timer for time out watchers
+    char            Direction_Pin;                  // Pin to control TX/RX buffer chip
+    unsigned char   Status_Return_Value;            // Status packet return states ( NON , READ , ALL )
+};
 
 
 extern DynamixelClass Dynamixel;
