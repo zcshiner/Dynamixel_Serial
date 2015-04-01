@@ -853,7 +853,7 @@ void DynamixelClass::transmitInstructionPacket(void){                           
 
     _serial->write(~checksum_packet & 0xFF);                                            // Write low bit of checksum to serial
 
-#if defined(__AVR_ATmega32U4__)  // Arduino Leonardo uses a different hardware address
+#if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__) || defined(__AVR_ATmega2560__) // Leonardo and Mega use Serial1
     if ((UCSR1A & B01100000) != B01100000){                                             // Wait for TX data to be sent
         _serial->flush();
     }
