@@ -365,9 +365,9 @@ unsigned int DynamixelClass::setMode(unsigned char ID, bool Dynamixel_Mode, unsi
     Instruction_Packet_Array[1] = SET_PID_LENGTH;
     Instruction_Packet_Array[2] = COMMAND_WRITE_DATA;
     Instruction_Packet_Array[3] = RAM_PROPORTIONAL_GAIN;
-    Instruction_Packet_Array[4] = P;
+    Instruction_Packet_Array[4] = D;
     Instruction_Packet_Array[5] = I;
-    Instruction_Packet_Array[6] = D;
+    Instruction_Packet_Array[6] = P;
 
     clearRXbuffer();
 
