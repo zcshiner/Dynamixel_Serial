@@ -1,7 +1,7 @@
 Dynamixel Serial library
 ========================
 
-Arduino library for interfacing with Dynamixel MX series servos over serial.
+Arduino library for interfacing with Dynamixel MX series servos over serial comm v1.0.
 
 ## Usage
 See the examples folder for sample code.
