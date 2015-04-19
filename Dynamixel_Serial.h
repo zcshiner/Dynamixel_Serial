@@ -52,9 +52,9 @@ Version 2.2
 // RAM AREA
 #define RAM_TORQUE_ENABLE               0x18
 #define RAM_LED                         0x19
-#define RAM_PROPORTIONAL_GAIN           0x1A
+#define RAM_PROPORTIONAL_GAIN           0x1C
 #define RAM_INTERGRAL_GAIN              0x1B
-#define RAM_DERIVATIVE_GAIN             0x1C
+#define RAM_DERIVATIVE_GAIN             0x1A
 #define RAM_GOAL_POSITION_L             0x1E
 #define RAM_GOAL_POSITION_H             0x1F
 #define RAM_GOAL_SPEED_L                0x20
